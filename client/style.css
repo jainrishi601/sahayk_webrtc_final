@@ -1,0 +1,14 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+video {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.alert {
+    display: block;
+}
