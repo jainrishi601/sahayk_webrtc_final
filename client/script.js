@@ -1,113 +1,72 @@
-let peer = null;
-let currentCall = null;
-let localStream;
-let screenSharing = false;
+const socket = io();
+let localStream, remoteStream, peerConnection;
+let roomId;
 
-function createRoom() {
-    const roomId = document.getElementById("room-input").value;
+async function joinRoom() {
+    roomId = document.getElementById('room-id').value;
     if (!roomId) {
-        alert("Please enter a room ID.");
+        alert('Please enter a room ID');
         return;
     }
+    socket.emit('join-room', roomId);
 
-    peer = new Peer(roomId, {
-        host: 'sahayk-webrtc.onrender.com', // Render URL
-        port: 443,                          // HTTPS port
-        path: '/peerjs',                    // PeerJS path
-        secure: true                        // Secure connection
-    });
-
-    peer.on('open', () => {
-        notify("Room created. Waiting for a participant to join.");
-        getUserMedia();
-    });
-
-    peer.on('call', (call) => {
-        call.answer(localStream);
-        call.on('stream', (stream) => setRemoteStream(stream));
-        currentCall = call;
-    });
+    socket.on('user-joined', handleUserJoined);
+    socket.on('receive-offer', handleOffer);
+    socket.on('receive-answer', handleAnswer);
+    socket.on('receive-candidate', handleCandidate);
 }
 
-function joinRoom() {
-    const roomId = document.getElementById("room-input").value;
-    if (!roomId) {
-        alert("Please enter a room ID.");
-        return;
-    }
-
-    peer = new Peer({
-        host: 'sahayk-webrtc.onrender.com', // Render URL
-        port: 443,
-        path: '/peerjs',
-        secure: true
-    });
-
-    peer.on('open', () => {
-        notify("Joining room...");
-        getUserMedia(() => {
-            const call = peer.call(roomId, localStream);
-            call.on('stream', (stream) => setRemoteStream(stream));
-            currentCall = call;
-        });
-    });
+async function startVideo() {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById('local-video').srcObject = localStream;
+    initializePeerConnection();
 }
 
-function getUserMedia(callback) {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-            localStream = stream;
-            setLocalStream(localStream);
-            if (callback) callback();
-        })
-        .catch((err) => console.error("Failed to access media devices:", err));
+function initializePeerConnection() {
+    peerConnection = new RTCPeerConnection();
+    peerConnection.onicecandidate = ({ candidate }) => {
+        if (candidate) socket.emit('ice-candidate', { roomId, candidate });
+    };
+    peerConnection.ontrack = (event) => {
+        remoteStream = event.streams[0];
+        document.getElementById('remote-video').srcObject = remoteStream;
+    };
+    localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
 }
 
-function setLocalStream(stream) {
-    document.getElementById("local-vid-container").hidden = false;
-    const localVideo = document.getElementById("local-video");
-    localVideo.srcObject = stream;
+async function handleUserJoined() {
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    socket.emit('offer', { roomId, offer });
 }
 
-function setRemoteStream(stream) {
-    document.getElementById("remote-vid-container").hidden = false;
-    const remoteVideo = document.getElementById("remote-video");
-    remoteVideo.srcObject = stream;
+async function handleOffer({ senderId, offer }) {
+    initializePeerConnection();
+    await peerConnection.setRemoteDescription(offer);
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('answer', { roomId, answer });
 }
 
-function startScreenShare() {
-    if (screenSharing) {
-        stopScreenSharing();
-        return;
-    }
-
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-        .then((stream) => {
-            screenSharing = true;
-            const screenVideoTrack = stream.getVideoTracks()[0];
-            const screenAudioTrack = stream.getAudioTracks()[0];
-            screenVideoTrack.onended = () => stopScreenSharing();
-
-            const videoSender = currentCall.peerConnection.getSenders().find(sender => sender.track.kind === 'video');
-            const audioSender = currentCall.peerConnection.getSenders().find(sender => sender.track.kind === 'audio');
-            if (videoSender) videoSender.replaceTrack(screenVideoTrack);
-            if (audioSender) audioSender.replaceTrack(screenAudioTrack);
-        })
-        .catch((err) => console.error("Error sharing screen:", err));
+async function handleAnswer({ answer }) {
+    await peerConnection.setRemoteDescription(answer);
 }
 
-function stopScreenSharing() {
-    if (!screenSharing) return;
-    screenSharing = false;
-    const videoSender = currentCall.peerConnection.getSenders().find(sender => sender.track.kind === 'video');
-    const audioSender = currentCall.peerConnection.getSenders().find(sender => sender.track.kind === 'audio');
-    if (videoSender) videoSender.replaceTrack(localStream.getVideoTracks()[0]);
-    if (audioSender) audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+async function handleCandidate({ candidate }) {
+    await peerConnection.addIceCandidate(candidate);
 }
 
-function notify(message) {
-    const notification = document.getElementById("notification");
-    notification.innerText = message;
-    notification.hidden = false;
-    setTimeout(() => notification.hidden = true, 3000);
+async function startScreenShare() {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    const screenTrack = screenStream.getVideoTracks()[0];
+    const sender = peerConnection.getSenders().find((s) => s.track.kind === 'video');
+    if (sender) sender.replaceTrack(screenTrack);
+
+    screenTrack.onended = () => stopScreenShare();
+}
+
+function stopScreenShare() {
+    const videoTrack = localStream.getVideoTracks()[0];
+    const sender = peerConnection.getSenders().find((s) => s.track.kind === 'video');
+    if (sender) sender.replaceTrack(videoTrack);
 }

@@ -1,30 +1,47 @@
 // server/server.js
 const express = require('express');
-const { ExpressPeerServer } = require('peer');
+const http = require('http');
+const socketIO = require('socket.io');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 10000; // Default to 10000 if no PORT is set by Render
+const server = http.createServer(app);
+const io = socketIO(server);
+
+const PORT = process.env.PORT || 3000;
 
 // Serve static files from the client directory
 app.use(express.static(path.join(__dirname, '../client')));
 
-// Start Express server
-const server = app.listen(PORT, () => {
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
+
+    // Join a room
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+        socket.to(roomId).emit('user-joined', socket.id);
+    });
+
+    // Handle WebRTC offer
+    socket.on('offer', ({ roomId, offer }) => {
+        socket.to(roomId).emit('receive-offer', { senderId: socket.id, offer });
+    });
+
+    // Handle WebRTC answer
+    socket.on('answer', ({ roomId, answer }) => {
+        socket.to(roomId).emit('receive-answer', { senderId: socket.id, answer });
+    });
+
+    // Handle ICE candidates
+    socket.on('ice-candidate', ({ roomId, candidate }) => {
+        socket.to(roomId).emit('receive-candidate', { senderId: socket.id, candidate });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
-
-// Configure PeerJS server with options to work with Render's proxy
-const peerServer = ExpressPeerServer(server, {
-    debug: true,
-    path: '/peerjs',
-    proxied: true,  // Enable proxy support for Render
-    secure: true    // Enforce secure connection (HTTPS)
-});
-
-app.use('/peerjs', peerServer);
-
-// Fallback route to serve index.html for any undefined route
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/index.html'));
 });

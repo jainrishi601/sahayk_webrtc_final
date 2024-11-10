@@ -2,53 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>WebRTC Screen Share with Audio</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <title>WebRTC with Socket.IO</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1 text-light">WebRTC Screen Share with Audio</span>
-        </div>
-    </nav>
-
-    <div class="container-fluid pt-5">
-        <div class="row">
-            <div class="col-lg-6 col-md-8">
-                <label for="room-input" class="form-label">Enter Room ID to connect or create</label>
-                <input id="room-input" type="text" class="form-control" placeholder="Room ID">
-                <br>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-secondary" onclick="createRoom()">Create Room</button>
-                    <button type="button" class="btn btn-primary" onclick="joinRoom()">Join Room</button>
-                    <button type="button" class="btn btn-success" onclick="startScreenShare()">Share Screen with Audio</button>
-                    <button type="button" class="btn btn-danger" onclick="stopScreenSharing()">Stop Sharing</button>
-                </div>
-            </div>
-            <div class="col-lg-6 col-md-4">
-                <div id="notification" class="alert alert-info alert-dismissible fade show mt-3" role="alert" hidden>
-                    <strong>Notice:</strong> Check the fields below for more information.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-5">
-            <div class="col-lg-6" id="local-vid-container" hidden>
-                <h2>Local Stream</h2>
-                <video id="local-video" class="w-100 border" controls autoplay muted></video>
-            </div>
-
-            <div class="col-lg-6" id="remote-vid-container" hidden>
-                <h2>Remote Stream</h2>
-                <video id="remote-video" class="w-100 border" controls autoplay></video>
-            </div>
-        </div>
+    <div>
+        <label for="room-id">Room ID:</label>
+        <input id="room-id" type="text" placeholder="Enter Room ID">
+        <button onclick="joinRoom()">Join Room</button>
     </div>
+    <div>
+        <button onclick="startVideo()">Start Video</button>
+        <button onclick="startScreenShare()">Share Screen</button>
+        <button onclick="stopScreenShare()">Stop Sharing</button>
+    </div>
+    <video id="local-video" autoplay muted></video>
+    <video id="remote-video" autoplay></video>
 
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

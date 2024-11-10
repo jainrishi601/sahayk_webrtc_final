@@ -6,7 +6,12 @@
     "start": "node server/server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "peer": "^0.6.1"
-  }
+    "express": "^4.21.1",
+    "peer": "^0.6.1",
+    "socket.io": "^4.8.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
