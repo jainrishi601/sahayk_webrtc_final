@@ -11,9 +11,10 @@ function createRoom() {
     }
     
     peer = new Peer(roomId, {
-        host: '/',
-        port: 3000,
-        path: '/peerjs'
+        host: 'sahayk-webrtc.onrender.com', // Replace with your Render URL
+        port: 443,                          // Use 443 for HTTPS
+        path: '/peerjs',                    // PeerJS server path
+        secure: true                        // Secure connection
     });
 
     peer.on('open', () => {
@@ -36,9 +37,10 @@ function joinRoom() {
     }
     
     peer = new Peer({
-        host: '/',
-        port: 3000,
-        path: '/peerjs'
+        host: 'sahayk-webrtc.onrender.com', // Replace with your Render URL
+        port: 443,
+        path: '/peerjs',
+        secure: true
     });
 
     peer.on('open', () => {
