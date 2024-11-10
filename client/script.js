@@ -9,11 +9,11 @@ function createRoom() {
         alert("Please enter a room ID.");
         return;
     }
-    
+
     peer = new Peer(roomId, {
-        host: 'sahayk-webrtc.onrender.com', // Replace with your Render URL
-        port: 443,                          // Use 443 for HTTPS
-        path: '/peerjs',                    // PeerJS server path
+        host: 'sahayk-webrtc.onrender.com', // Render URL
+        port: 443,                          // HTTPS port
+        path: '/peerjs',                    // PeerJS path
         secure: true                        // Secure connection
     });
 
@@ -35,9 +35,9 @@ function joinRoom() {
         alert("Please enter a room ID.");
         return;
     }
-    
+
     peer = new Peer({
-        host: 'sahayk-webrtc.onrender.com', // Replace with your Render URL
+        host: 'sahayk-webrtc.onrender.com', // Render URL
         port: 443,
         path: '/peerjs',
         secure: true
@@ -80,7 +80,7 @@ function startScreenShare() {
         stopScreenSharing();
         return;
     }
-    
+
     navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
         .then((stream) => {
             screenSharing = true;
